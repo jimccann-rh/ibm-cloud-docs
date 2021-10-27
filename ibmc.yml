@@ -1,0 +1,41 @@
+---
+- hosts: localhost
+  vars:
+    userepo: "jimccann-rh"
+    reponame: "ibm-cloud-docs"
+    reponametoget: "vmwaresolutions"
+    reponametocopy: "ibm-cloud-docs"
+    foldertocopy: "vsphere"
+    blob: "vmwaresolutions/blob/master/vsphere/vs_vsphereclusteroverview.md"
+  
+  tasks:
+
+    - block:
+        - name: "git {{reponametocopy}} repo"
+          ansible.builtin.git:
+            repo: "git@github.com:{{userepo}}/{{reponame}}.git"
+            dest: "{{ ansible_env.HOME }}/{{reponametocopy}}/"
+            force: yes 
+
+        - name: "git {{reponametoget}} repo"
+          ansible.builtin.git:
+            repo: "https://github.com/{{reponame}}/{{reponametoget}}.git"
+            dest: "{{ ansible_env.HOME }}/{{reponametoget}}/"
+            force: yes
+
+
+
+        - name: copy {{foldertocopy}} info to personal repo
+          ansible.builtin.copy:
+            src: "{{ ansible_env.HOME }}/{{reponametoget}}/{{foldertocopy}}"
+            dest: "{{ ansible_env.HOME }}/{{reponametocopy}}"
+
+
+        - name: push to repo {{userepo}} {{reponame}} for folder {{foldertocopy}}
+          shell: git add -A && git commit -m "Adding new files to repo" && git push
+          args:
+            chdir: "{{ ansible_env.HOME }}/{{reponametocopy}}/"
+          register: shellresult
+          failed_when: shellresult.rc >= 2
+          changed_when: shellresult.rc == 0 or shellresult.rc >= 2 
+
